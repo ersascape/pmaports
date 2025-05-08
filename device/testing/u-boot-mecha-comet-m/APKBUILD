@@ -1,0 +1,109 @@
+pkgname=u-boot-mecha-comet-m
+pkgver=2023.04
+pkgrel=1
+_commit=""
+_uboot_ver="imx-2023.04.y"
+# 'comet' branch in atf repo
+_atf_commit="99195a23d3aef485fb8f10939583b1bdef18881c"
+_imxmkimage_commit="imx-mecha"
+_firmwareversion="8.20"
+pkgdesc="u-boot bootloader for the Mecha Comet"
+url="https://github.com/gaganmalvi/u-boot"
+arch="aarch64"
+license="GPL-2.0-or-later OFL-1.1 BSD-2-Clause BSD-3-Clause eCos-2.0 IBM-pibs"
+makedepends="
+	bash
+	bc
+	binutils
+	bison
+	coreutils
+	dtc
+	flex
+	gnutls-dev
+	openssl-dev
+	perl
+	py3-setuptools
+	python3-dev
+	swig
+	util-linux-dev
+	zlib-dev
+	"
+options="!check !tracedeps pmb:cross-native"
+source="
+	u-boot-imx-mecha-comet.tar.gz::https://github.com/gaganmalvi/u-boot/archive/refs/heads/$_uboot_ver.tar.gz
+	arm-trusted-firmware-$_atf_commit.tar.gz::https://github.com/nxp-imx/imx-atf/archive/$_atf_commit.tar.gz
+	imx_mkimage-$_imxmkimage_commit.tar.gz::https://github.com/gaganmalvi/imx-mkimage/archive/refs/tags/$_imxmkimage_commit.tar.gz
+	https://www.nxp.com/lgfiles/NMG/MAD/YOCTO/firmware-imx-$_firmwareversion.bin
+	update-u-boot
+	"
+install="$pkgname.post-upgrade"
+
+_atf_builddir="$srcdir/imx-atf-$_atf_commit"
+_firmware_builddir="$srcdir/firmware-imx-$_firmwareversion"
+_imxmkimage_dir="$srcdir/imx-mkimage-$_imxmkimage_commit"
+builddir="$srcdir/u-boot-$_uboot_ver"
+
+prepare() {
+	default_prepare
+
+	msg "Extracting DDR & HDMI firmware"
+	cd "$srcdir"
+	chmod +x firmware-imx-$_firmwareversion.bin
+	./firmware-imx-$_firmwareversion.bin --auto-accept
+	cp -v "$_firmware_builddir"/firmware/ddr/synopsys/lpddr4*.bin $builddir/
+	cp -v "$_firmware_builddir"/firmware/hdmi/cadence/signed_*imx8m.bin $builddir/
+
+	# Disable -Werror in arm-trusted-firmware so it builds with GCC 12. The
+	# version we use here is missing E=0 introduced here:
+	# https://github.com/ARM-software/arm-trusted-firmware/commit/6336b07ad25cb05ca75f5a465d816af7956e0a59
+	sed -i "s/-Werror//g" "$_atf_builddir"/Makefile
+}
+
+build() {
+	msg "Building ARM trusted firmware"
+	cd "$_atf_builddir"
+	LDFLAGS="-no-warn-rwx-segment" make PLAT=imx8mm bl31
+	# Overwrite default bl31 binary with one made here
+	export BL31="$_atf_builddir/build/imx8mm/release/bl31.bin"
+	cp -v "$_atf_builddir"/build/imx8mm/release/bl31.bin "$builddir"/
+
+	msg "Building u-boot"
+	cd $builddir
+
+	# Phone uboot firmware
+	make distclean
+	make mecha_cometm_gen1_defconfig
+	make CROSS_COMPILE=aarch64-alpine-linux-musl- -j$(nproc --all)
+
+	# Generate IMX image
+	cp "$builddir"/spl/u-boot-spl.bin "$_imxmkimage_dir"/iMX8M/u-boot-spl.bin
+	cp "$builddir"/u-boot-nodtb.bin "$_imxmkimage_dir"/iMX8M/u-boot-nodtb.bin
+	cp "$builddir"/arch/arm/dts/mecha-comet.dtb "$_imxmkimage_dir"/iMX8M/mecha-comet.dtb
+        cp "$builddir"/arch/arm/dts/mecha-comet.dtb "$_imxmkimage_dir"/iMX8M/mecha-comet-evk.dtb
+	install -Dm755 "$builddir"/tools/mkimage "$_imxmkimage_dir"/iMX8M/mkimage_uboot
+	cp "$_atf_builddir"/build/imx8mm/release/bl31.bin "$_imxmkimage_dir"/iMX8M/bl31.bin
+        cp -v "$_firmware_builddir"/firmware/ddr/synopsys/lpddr4*.bin "$_imxmkimage_dir"/iMX8M/
+        cp -v "$_firmware_builddir"/firmware/hdmi/cadence/signed_*imx8m.bin "$_imxmkimage_dir"/iMX8M/
+
+        cd $_imxmkimage_dir
+	make SOC=iMX8MM PLAT=mecha-comet flash_evk
+        
+	cp iMX8M/flash.bin "$builddir"/phone-boot.img
+	sha512sum -b "$builddir"/phone-boot.img > "$builddir"/phone-boot.img.sha512
+}
+
+package() {
+	install -D -m644 "$builddir"/phone-boot.img \
+		"$pkgdir/usr/share/u-boot/comet-m/phone-boot.img"
+	install -D -m644 "$builddir"/phone-boot.img.sha512 \
+		"$pkgdir/usr/share/u-boot/comet-m/phone-boot.img.sha512"
+	install -D -m 755 "$srcdir"/update-u-boot \
+		"$pkgdir"/usr/sbin/update-u-boot
+}
+sha512sums="
+d4d77d2b6a561134c5351286243df955db42f3754941a15ba7e3225dedbf81e03dcdf01f4ac7f3b66a912978200abc1ecca21659a6d7cdbea08bda7751e0d6fa  u-boot-imx-mecha-comet.tar.gz
+d5ca3eea01a147952fbe18745080dce3ea0a29302befaccf3aeb33aa5f7837a8bb17060f53dd3843a604e9bef045d3e0aed5ce8f99b456aa96bcf1343a4bf06c  arm-trusted-firmware-99195a23d3aef485fb8f10939583b1bdef18881c.tar.gz
+8302ab022132bf29ff5ba260d9ac01583fcb975784d74a8d1702b74cc149b25823a46fb332cf00838382d73ddd40d3ad8bff2047aa24fc2f299cf1428baaac6c  imx_mkimage-imx-mecha.tar.gz
+34f69f773ce6a7cd0c00237e31ebbc9de1cfd61937a9ece3c6173876b5a47036c57a25ab8694c7c0ef33cecd7ca4de908fb9cede89349ef2b701eac7ab9d5b14  firmware-imx-8.20.bin
+4139eef50e8a8c96ddfd89dcb3888e9c0e0851a02db1d5bede2801c161bb31aa0e9241becd5e4ff26d3aac2c31c8322e7cd1ed6501a21c3ab99ae3afffa7babe  update-u-boot
+"

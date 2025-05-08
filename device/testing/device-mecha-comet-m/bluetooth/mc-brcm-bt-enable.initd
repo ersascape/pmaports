@@ -1,0 +1,5 @@
+#!/sbin/openrc-run
+name="Mecha Comet brcm bluetooth enabler"
+supervisor=supervise-daemon
+command="/usr/bin/hciattach"
+command_args="/dev/ttymxc0 bcm43xx 921600"

@@ -1,0 +1,105 @@
+# Reference: <https://postmarketos.org/devicepkg>
+pkgname=device-mecha-comet-m
+pkgdesc="Mecha Systems Inc. Mecha Comet"
+pkgver=1
+pkgrel=0
+url="https://postmarketos.org"
+license="MIT"
+arch="aarch64"
+options="!check !archcheck"
+depends="
+	alsa-ucm-conf
+	bluez
+	bluez-deprecated
+	gnss-share
+	i2c-tools
+	iw
+	mesa-egl
+	millipixels
+	postprocessd
+	linux-mecha-comet-m
+	u-boot-mecha-comet-m
+	u-boot-tools
+	firmware-mecha-comet-m
+	postmarketos-base
+"
+makedepends="devicepkg-dev u-boot-tools"
+source="
+	flash_script.lst
+	uboot-script.cmd
+	graphics/00-mesa.sh
+	graphics/70-comet-xwayland-accel.sh
+	graphics/xorg.conf
+	audio/asound.conf
+	audio/asound.state
+	bluetooth/mc-brcm-bt-enable.initd
+	udev/10-imx.rules
+	deviceinfo
+	modules-initfs
+"
+
+subpackages="
+	$pkgname-audio
+	$pkgname-openrc
+	$pkgname-tinydm
+	$pkgname-x11
+"
+
+replaces="alsa-ucm-conf"
+
+build() {
+	mkimage -A arm64 -C none -O linux -T script -d "$srcdir/uboot-script.cmd" "$srcdir/boot.scr"
+	devicepkg_build $startdir $pkgname
+}
+
+audio() {
+	pkgdesc="Audio support for Mecha Comet"
+	install_if="$pkgname pulseaudio"
+	install -D -m644 "$srcdir"/asound.conf "$subpkgdir"/etc/asound.conf
+	install -D -m644 "$srcdir"/asound.state "$subpkgdir"/var/lib/alsa/asound.state
+}
+
+tinydm() {
+	pkgdesc="Tinydm config for the Mecha Comet"
+	install_if="$pkgname tinydm"
+	install -Dm755 "$srcdir"/70-comet-xwayland-accel.sh \
+		"$subpkgdir"/etc/tinydm.d/env-wayland.d/70-comet-xwayland-accel.sh
+}
+
+openrc() {
+	install_if="$pkgname=$pkgver-r$pkgrel openrc"
+	install="$subpkgname.post-install $subpkgname.post-upgrade"
+
+	mkdir -p "$subpkgdir"
+}
+
+x11() {
+	install_if="$pkgname xorg-server"
+	install -Dm644 "$srcdir"/xorg.conf \
+		"$subpkgdir"/etc/X11/xorg.conf.d/10-video.conf
+}
+
+package() {
+	install -D -m644 "$srcdir"/boot.scr \
+		"$pkgdir"/boot/boot.scr
+	install -D -m755 "$srcdir"/00-mesa.sh "$pkgdir"/etc/profile.d/00-mesa.sh
+	install -D -m644 "$srcdir"/flash_script.lst "$pkgdir"/usr/share/uuu/flash_script.lst
+	install -D -m644 "$srcdir"/10-imx.rules "$pkgdir"/usr/lib/udev/rules.d/10-imx.rules
+	install -Dm755 "$srcdir"/mc-brcm-bt-enable.initd \
+		"$pkgdir"/etc/init.d/l5-brcm-bt-enable
+
+	devicepkg_package $startdir $pkgname
+}
+sha512sums="
+7171a761666a3186e7a810d3efb32acf3b7dc89e9dc8aeff1f69e4da5584ef1c94015c38407be75d7c9a726e0ac6079d80e38904154b9dfeb01f8cee66d4af8f  flash_script.lst
+0f1c006971855e50280dcca2d43b0ecbece226a3d149ffd75054ab3b979337f46df05171d6a2c3772b951da6c7be3d622621497e59b0f0f2dd9fbe1104444c71  uboot-script.cmd
+2e72d9a084ecd6c96cafbbd8fda461ae8b2ebd14ffda601d9f36d73f08f04088213de17da078293ddd958d4c76d33148c7af6e252eb0709f6934855a55578509  00-mesa.sh
+fad386071fc45f9880a94cc8004fabd5d98b3e6a12606c98d8e72e0208f22ab54f03b921f5967a959782507e2bff67d2fa92e46d8cd242011a3afcdbda529279  70-comet-xwayland-accel.sh
+1cbc65cf2cb8fad4b0332d012a0256a266205b9b64371f5c0dae09dbb7f1e45b254e8c43993b896097e9d7035a72d547d9bce1ab2133addc56a5abdb80b44616  xorg.conf
+8f228acf1767be8e74755ba8e319c9a40a0d9749a04eb5748d353361807c3ba411eae2291ff87aafaf64eb64087072ad92805b7c73c3e606bdb3334492e5ab71  asound.conf
+47e3b6f2a00c9a8662eb57a1b45120c28ad57bf777587d46698863f986fd1b27008402d8dd81864fcae15261f17033b83751cb076b0237d419db724fdf75075e  asound.state
+2cd08f115581cb691465e1f8103cfb9776aef860cce9640003b6efda9aaa5d4b7522e6ea5343fc2d48d59101cf3226dd5351fc92d1192320607368d98408f1f6  mc-brcm-bt-enable.initd
+65a233cbd917733aa09736e7cc81c7cc6e5ce56b0ca764ae245ee94b3773860d55f685959b49564d9010a88963738d41e062746c0c6c9dd5602ac92f45771a7f  10-imx.rules
+ab5d276449752ac22647abd1560294111110cc1e034a1e55e0ef393bed0c117384a25ac4f0803ee634739e82048ed0014ba50952d21cd3b48b03a476e38c9473  deviceinfo
+e70bae17df23dcaaaea0e2d3616556f04baa23f8ee1357785c0f539bf97282d8ddff53953e155b72689bb73beb38c2da3d08de2a61e866684edfa10a6593885d  modules-initfs
+"

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+rc-update -qq del gpsd
+rc-update -q add gnss-share
+
+# Clean up any old, unneeded legacy u-boot images from /boot
+for f in uInitrd uImage; do
+	[ ! -f "/boot/$f" ] && continue
+	rm -f "/boot/$f"
+done

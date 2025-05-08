@@ -1,0 +1,22 @@
+pkgname=firmware-mecha-comet-m
+pkgver=1
+pkgrel=1
+_commit=""
+pkgdesc="Firmware for the Mecha Comet M"
+url="https://github.com/Ersa-Studios/linux-mecha-firmware"
+arch="aarch64"
+license="proprietary"
+options="!check !strip !archcheck !tracedeps pmb:cross-native"
+source="linux-mecha-firmware.tar.gz::https://github.com/Ersa-Studios/linux-mecha-firmware/archive/refs/tags/linux-6.6.tar.gz"
+builddir="$srcdir/linux-mecha-firmware-linux-6.6"
+
+package() {
+	mkdir -p "$pkgdir/lib/firmware/postmarketos"
+	cp -r "$builddir/firmware/brcm" "$pkgdir/lib/firmware/postmarketos"
+	cp -r "$builddir/firmware/imx" "$pkgdir/lib/firmware/postmarketos"
+	cp -r "$builddir/firmware/skl_hda_dsp_generic-tplg.bin" "$pkgdir/lib/firmware/postmarketos"
+}
+
+sha512sums="
+93a2baa003234f91ad4becf3cf455b335ac24d738e6ae9b80385713eca6ca8d50f3a539c4961c6aaf914d0b7cba9ce667e5aec355ba66e20794447e51bb211e2  linux-mecha-firmware.tar.gz
+"

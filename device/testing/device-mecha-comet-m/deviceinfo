@@ -1,0 +1,27 @@
+# Reference: <https://postmarketos.org/deviceinfo>
+# Please use double quotes only. You can source this file in shell
+# scripts.
+
+deviceinfo_format_version="0"
+deviceinfo_name="Mecha Systems Inc. Mecha Comet"
+deviceinfo_manufacturer="Mecha Systems Inc."
+deviceinfo_codename="mecha-comet-m"
+deviceinfo_year="2025"
+deviceinfo_dtb="freescale/imx8mm-mecha-comet-m-gen1"
+deviceinfo_append_dtb="false"
+deviceinfo_arch="aarch64"
+deviceinfo_mesa_driver="mxsfb-drm"
+
+# Device related
+deviceinfo_gpu_accelerated="true"
+deviceinfo_chassis="handset"
+deviceinfo_external_storage="true"
+deviceinfo_keyboard="false"
+deviceinfo_screen_width=""
+deviceinfo_screen_height=""
+
+# Bootloader related
+deviceinfo_flash_method="uuu"
+deviceinfo_generate_legacy_uboot_initfs="true"
+deviceinfo_sd_embed_firmware="u-boot/comet-m/phone-boot.img:33"
+deviceinfo_boot_part_start="4096"
