@@ -15,7 +15,7 @@ depends="
 	i2c-tools
 	iw
 	mesa-egl
-	millipixels
+	megapixels
 	postprocessd
 	linux-mecha-comet-m
 	u-boot-mecha-comet-m
