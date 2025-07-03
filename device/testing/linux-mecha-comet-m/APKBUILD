@@ -6,7 +6,7 @@ pkgdesc="Mecha Comet M kernel fork"
 arch="aarch64"
 _carch="arm64"
 _flavor="mecha-comet-m"
-url="https://github.com/gaganmalvi/linux-imx"
+url="https://github.com/Ersa-Studios/linux-imx"
 license="GPL-2.0-only"
 options="!strip !check !tracedeps
 	pmb:cross-native
@@ -29,13 +29,13 @@ install="$pkgname.post-upgrade"
 # Source
 _repository="linux-imx"
 _config="config-$_flavor.$arch"
-
+_tag="mecha-pmOS-devel-1"
 
 source="
-	$pkgname-linux-$pkgver.tar.gz::https://github.com/gaganmalvi/linux-imx/archive/refs/tags/linux-6.6.36.tar.gz
+	$pkgname-linux-$pkgver.tar.gz::"$url/archive/refs/tags/$_tag.tar.gz"
 	$_config
 "
-builddir="$srcdir/$_repository-linux-$pkgver"
+builddir="$srcdir/$_repository-$_tag"
 
 prepare() {
 	default_prepare
@@ -59,6 +59,6 @@ package() {
 
 }
 sha512sums="
-7846c6c9dbecce651e46a8c24677256aec2395c30d38c45930835fd9a10c981e5bf544e085269113fc9977b77ad46ebdc365906c320e811f65d8c10cf2304297  linux-mecha-comet-m-linux-6.6.36.tar.gz
+ebd413b7454ffb45909cb42a911e6411bfbcdb76e3efceea661b4a0191e298be6c801a68c9430b3ec9f3e41b5416e12ee872ea0bf9937f61c638d33d6c83db3b  linux-mecha-comet-m-linux-6.6.36.tar.gz
 1aaf0379020e5475580cc4cc20a5a18a2b58f045a601d8b20e27be8b433719122cf3c8a18294c52a0027b9588061030a2f135db0c84f3e6bbe017f6ff22232b5  config-mecha-comet-m.aarch64
 "
